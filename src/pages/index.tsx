@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 import { trpc } from '../utils/trpc'
 import { BoardState } from '../server/routers/board-state'
 import Link from 'next/link'
-
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 type BoardProps = {
   boards: {
     [key: string]: BoardState
@@ -80,6 +80,7 @@ export default function Home() {
         <button className="btn btn-primary" onClick={onCreateClicked}>
           Create new Board
         </button>
+        <ReactQueryDevtools initialIsOpen={false} />
       </main>
     </>
   )

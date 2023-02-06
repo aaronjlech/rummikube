@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { v4 as uuid } from 'uuid';
-import { z } from 'zod';
+import { number, z } from 'zod';
 import { procedure } from '../trpc';
 const colors = {
   red: '#DC2626',
@@ -53,9 +53,9 @@ const shuffleArray = (array: any[]) => {
   return arrCopy;
 };
 
-const doubleKubes = [...kubes, ...kubes, ...jokers];
+const doubleKubes = [...kubes, ...jokers];
 
-type Player = {
+export type Player = {
   id: string;
   nickName: string;
   currentChips: Kube[];
@@ -70,6 +70,7 @@ export class BoardState {
   remainingChips: number;
   players: Player[];
   turn: number;
+  gameInProgress: boolean;
   constructor() {
     this.chipsPlayed = [];
     this.kubes = shuffleArray(doubleKubes);
@@ -77,6 +78,7 @@ export class BoardState {
     this.players = [];
     this.turn = 0;
     this.id = uuid();
+    this.gameInProgress = false;
     console.log(this.id)
     this.kubeSets = []
   }
@@ -86,7 +88,7 @@ export class BoardState {
     if (isValidKubeSet) {
       return 'Invalid moves detected'
     }
-    
+
   }
 
   private validateRunSet(kubeSet: Kube[]) {
@@ -130,10 +132,31 @@ export class BoardState {
 
     return this.validateRunSet(kubeSet) || this.validateGroupSet(kubeSet)
   }
+
+  public addPlayers(numberOfPlayers: number) {
+    const randomNames = ['bob', 'susan', 'john', 'jimmy']
+    for(let i = 1; i <= numberOfPlayers; i++) {
+      const player: Player = {
+        currentChips: [],
+        id: uuid(),
+        nickName: randomNames[i -1],
+        points: 0
+      }
+      this.players.push(player)
+    }
+    console.log(this.players)
+  }
+
+  public startGame(numberOfPlayers: number) {
+    if(this.gameInProgress) {
+      return;
+    }
+    this.gameInProgress = true;
+    this.addPlayers(numberOfPlayers)
+  }
 }
 
 const testBoardState = new BoardState();
-
 const boardStates: {
   [key: string]: BoardState
 } = { [testBoardState.id]: testBoardState }
@@ -178,6 +201,20 @@ const boardStateRouter = {
   .mutation(({ input }) => {
     const { id } = input
     delete boardStates[id]
+  }),
+
+  startGame: procedure
+  .input(z.object({
+    id: z.string(),
+    playerCount: z.number().min(2).max(4)
+  }))
+  .mutation(({ input } ) => {
+    const players: Player[] = []
+    const { id, playerCount } = input
+    const board = boardStates[id]
+    board.startGame(playerCount)
+    console.log(board)
+    return board
   })
 }
 
